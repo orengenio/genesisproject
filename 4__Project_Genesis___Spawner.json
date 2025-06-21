@@ -1,0 +1,499 @@
+{
+  "name": "4. Project Genesis - Spawner",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "f593cbcb-d471-4340-8bdf-9bae72d394c1",
+      "name": "Spawn Request",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1020,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🚀 GENESIS SPAWNER\nDeploys workflows to n8n, activates them, and registers with monitoring systems.",
+        "height": 200,
+        "width": 400,
+        "color": 3
+      },
+      "id": "5b13ef25-956e-40ee-8c0d-c272a4c5a632",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1080,
+        100
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "527c473a-2f9a-46b2-bf30-5a864281b344",
+      "name": "Prepare Deployment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://8.orengen.io/api/v1/workflows",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "n8nApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.deploymentPackage) }}",
+        "options": {}
+      },
+      "id": "7d5e5115-92a2-4109-b937-39cea383c7ee",
+      "name": "Create via n8n API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -580,
+        320
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "U9bPQvXlmGxCr8nu",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "id": "3cc745ae-79c1-4a8f-87bd-8a2cd692df0f",
+      "name": "Extract Workflow ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.N8N_URL }}/api/v1/workflows/{{ $json.workflowId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "n8nApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "active",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f6710805-25e0-4599-86a9-2d4105e746d5",
+      "name": "Activate Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -140,
+        220
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "U9bPQvXlmGxCr8nu",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_URL }}/webhook/genesis-observer",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "register"
+            },
+            {
+              "name": "workflowId",
+              "value": "={{ $json.workflowId }}"
+            },
+            {
+              "name": "workflowName",
+              "value": "={{ $json.workflowData.name }}"
+            },
+            {
+              "name": "monitoringLevel",
+              "value": "full"
+            },
+            {
+              "name": "healingEnabled",
+              "value": "={{ true }}"
+            },
+            {
+              "name": "alertThreshold",
+              "value": "={{ 0.95 }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "7ca21bbb-2451-42df-9da0-930aba12daf7",
+      "name": "Register with Observer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        220
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "spawn_result",
+              "name": "success",
+              "value": "={{ true }}",
+              "type": "boolean"
+            },
+            {
+              "id": "workflow_id",
+              "name": "workflowId",
+              "value": "={{ $('Extract Workflow ID').item.json.workflowId }}",
+              "type": "string"
+            },
+            {
+              "id": "workflow_url",
+              "name": "workflowUrl",
+              "value": "={{ $env.N8N_URL }}/workflow/{{ $('Extract Workflow ID').item.json.workflowId }}",
+              "type": "string"
+            },
+            {
+              "id": "spawn_meta",
+              "name": "spawnMeta",
+              "value": "={{ {\n  \"spawnedAt\": new Date().toISOString(),\n  \"activationStatus\": \"active\",\n  \"monitoringEnabled\": true,\n  \"workflowName\": $('Extract Workflow ID').item.json.workflowData.name\n} }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e04fec28-f276-46bc-9b62-e29586504b11",
+      "name": "Spawn Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        300,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_URL }}/webhook/genesis-metrics",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event",
+              "value": "workflow_spawned"
+            },
+            {
+              "name": "workflowId",
+              "value": "={{ $json.workflowId }}"
+            },
+            {
+              "name": "workflowName",
+              "value": "={{ $json.spawnMeta.workflowName }}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ $json.spawnMeta.spawnedAt }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "0312eb6f-31dc-4554-a7c2-c4627435bbac",
+      "name": "Log Spawn Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        220
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "ec98912b-0fe3-41ac-9c36-13c8b60d7a2d",
+      "name": "Check if System Workflow",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is_system",
+              "leftValue": "={{ $json.updateRegistry }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6192ed37-02cd-41c8-8e6d-cfc68096b914",
+      "name": "System Workflow?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        300,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_URL }}/webhook/genesis-registry",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "update"
+            },
+            {
+              "name": "role",
+              "value": "={{ $json.role }}"
+            },
+            {
+              "name": "workflowId",
+              "value": "={{ $json.workflowId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3a7005dc-fe7b-4b4f-9c15-b730edf084e2",
+      "name": "Update Genesis Registry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        420
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "content": "## 📊 Spawn Monitoring\nAfter spawning, workflows are:\n- Registered with Observer\n- Added to metrics tracking\n- Enabled for auto-healing",
+        "height": 200,
+        "width": 300,
+        "color": 4
+      },
+      "id": "c2857aee-6805-4846-820b-8332d638a997",
+      "name": "Monitoring Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "f324ebc0-75e2-4eca-b6ac-2ff9dec8c9de",
+      "name": "Handle Spawn Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        620
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## ❌ Error Handling\nFailed spawns are sent to HEALER for diagnosis and retry",
+        "height": 150,
+        "width": 250
+      },
+      "id": "2aaa47e7-163a-4cff-bea8-0075756df99b",
+      "name": "Error Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        640
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Spawn Request": {
+      "main": [
+        [
+          {
+            "node": "Prepare Deployment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Deployment": {
+      "main": [
+        [
+          {
+            "node": "Create via n8n API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create via n8n API": {
+      "main": [
+        [
+          {
+            "node": "Extract Workflow ID",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Handle Spawn Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Workflow ID": {
+      "main": [
+        [
+          {
+            "node": "Activate Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Activate Workflow": {
+      "main": [
+        [
+          {
+            "node": "Register with Observer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check if System Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register with Observer": {
+      "main": [
+        [
+          {
+            "node": "Spawn Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spawn Success": {
+      "main": [
+        [
+          {
+            "node": "Log Spawn Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if System Workflow": {
+      "main": [
+        [
+          {
+            "node": "System Workflow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "System Workflow?": {
+      "main": [
+        [
+          {
+            "node": "Update Genesis Registry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Spawn Error": {
+      "main": [
+        [
+          {
+            "node": "Log Spawn Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Chicago",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "f8d235c8-5640-45fc-8863-56cb9d560368",
+  "meta": {
+    "instanceId": "c7c0461801171066093875fcfd1736a9fa7a56b87fa0e147c3693d3242f94a89"
+  },
+  "id": "LOrFn8VuUTzbYHaH",
+  "tags": []
+}

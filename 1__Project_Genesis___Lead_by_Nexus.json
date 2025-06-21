@@ -1,0 +1,663 @@
+{
+  "name": "1. Project Genesis - Lead by Nexus",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "genesis-master",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "fdb3327b-69c4-417d-af71-4bfc58c12f38",
+      "name": "Genesis Entry Point",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -440,
+        520
+      ],
+      "webhookId": "genesis-master"
+    },
+    {
+      "parameters": {
+        "content": "## 🧬 GENESIS NEXUS\nMaster orchestrator that routes all requests to the appropriate agent based on intent classification.",
+        "height": 200,
+        "width": 300,
+        "color": 7
+      },
+      "id": "ebd605b1-4a8d-458a-9413-08700e02863a",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and analyze the incoming request\nconst prompt = $input.all()[0].json.prompt || $input.all()[0].json.query || $input.all()[0].json.message || \"\";\nconst requestId = Math.random().toString(36).substring(7);\nconst timestamp = new Date().toISOString();\n\n// Intent classification with multi-dimensional analysis\nconst intents = {\n  build: /create|build|make|design|generate|construct|develop|setup/i.test(prompt),\n  code: /code|function|script|logic|algorithm/i.test(prompt),\n  fix: /fix|repair|broken|error|fail|issue|problem|debug|heal/i.test(prompt),\n  monitor: /watch|monitor|track|observe|alert|notify|check/i.test(prompt),\n  analyze: /analyze|report|metrics|data|insights|pattern|trend/i.test(prompt),\n  deploy: /deploy|launch|activate|start|run|execute|spawn/i.test(prompt),\n  learn: /learn|optimize|improve|evolve|pattern|template/i.test(prompt),\n  urgent: /urgent|asap|immediately|emergency|critical|now/i.test(prompt),\n  complex: prompt.split(' ').length > 30 || prompt.includes('and') > 2\n};\n\n// Determine primary and secondary routes\nlet primaryRoute = 'architect'; // default\nlet secondaryRoutes = [];\n\nif (intents.fix) {\n  primaryRoute = 'healer';\n  if (intents.urgent) secondaryRoutes.push('spawner');\n} else if (intents.monitor) {\n  primaryRoute = 'observer';\n} else if (intents.analyze) {\n  primaryRoute = 'evolver';\n} else if (intents.build) {\n  primaryRoute = 'architect';\n  if (intents.code) secondaryRoutes.push('builder');\n  if (intents.complex) secondaryRoutes.push('builder');\n} else if (intents.code) {\n  primaryRoute = 'builder';\n} else if (intents.deploy) {\n  primaryRoute = 'spawner';\n}\n\n// Build routing package\nconst routingPackage = {\n  requestId,\n  timestamp,\n  prompt,\n  primaryRoute,\n  secondaryRoutes,\n  intents,\n  metadata: {\n    wordCount: prompt.split(' ').length,\n    complexity: intents.complex ? 'high' : 'normal',\n    urgency: intents.urgent ? 'high' : 'normal',\n    source: 'genesis-nexus'\n  }\n};\n\nreturn [routingPackage];"
+      },
+      "id": "cd2fd57b-1b1d-488e-a9cc-7e9b6fc7d0c8",
+      "name": "Intent Classifier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "routing_data",
+              "name": "=",
+              "value": "={{ $json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b0a1327e-33ca-4bc2-ae77-34c4279694f5",
+      "name": "Prepare Routing",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.primaryRoute }}",
+                    "rightValue": "architect",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "architect"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.primaryRoute }}",
+                    "rightValue": "healer",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "healer"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.primaryRoute }}",
+                    "rightValue": "observer",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "observer"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.primaryRoute }}",
+                    "rightValue": "spawner",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "spawner"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.primaryRoute }}",
+                    "rightValue": "evolver",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "evolver"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.primaryRoute }}",
+                    "rightValue": "builder",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "builder"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "df68beda-a4a0-40ec-96e9-b49d835ade2d",
+      "name": "Route to Agent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        300,
+        436
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🎯 Routing Logic\n\n**ARCHITECT**: create, build, design\n**HEALER**: fix, error, broken\n**OBSERVER**: monitor, watch, track\n**SPAWNER**: deploy, activate, launch\n**EVOLVER**: learn, optimize, analyze\n**BUILDER**: code, function, script",
+        "height": 250,
+        "width": 300,
+        "color": 4
+      },
+      "id": "073bc62e-ae97-4e04-b031-06757b82ceb7",
+      "name": "Routing Guide",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        680
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "response_builder",
+              "name": "response",
+              "value": "={{ $json }}",
+              "type": "object"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "genesis_version",
+              "name": "genesisVersion",
+              "value": "1.0",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d861112e-f083-4da4-a39a-9777f2d09304",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        740,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "b2259362-2c74-42db-9a41-a98578c5b986",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-metrics-endpoint/log",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event",
+              "value": "routing_complete"
+            },
+            {
+              "name": "requestId",
+              "value": "={{ $json.requestId }}"
+            },
+            {
+              "name": "route",
+              "value": "={{ $json.primaryRoute }}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ $json.timestamp }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "02c2fc6a-0c0e-45e2-a4ae-2a8ff8fbd7f8",
+      "name": "Log Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        620
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "rvn5aCm42IVax6ps",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        20
+      ],
+      "id": "77661cf1-7694-4418-8279-e9a9774c7e1b",
+      "name": "Execute ARCHITECT"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "FZYJQ4k3dpaL8VVt",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        220
+      ],
+      "id": "492fdcb8-029c-4ad7-a29f-4e0fa06e2f33",
+      "name": "Execute HEALER"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "2fOJEvWL6wAzPcZl",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        420
+      ],
+      "id": "24627e55-b479-4cf3-b117-1a3adbd65c35",
+      "name": "Execute OBSERVER"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "LOrFn8VuUTzbYHaH",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        620
+      ],
+      "id": "1a2fdfe4-a9ee-4b08-9d89-e345ef37fd0a",
+      "name": "Execute SPAWNER"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "GfdOIKUvtq4sV3nf",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        820
+      ],
+      "id": "bd9f8194-0393-41ff-bb0a-6dbe5273504f",
+      "name": "Execute EVOLVER"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "rziUS1IC2EUCN3XU",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        1020
+      ],
+      "id": "ec3fc6aa-ed4c-4b2e-9bba-353370080499",
+      "name": "Execute BUILDER"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Genesis Entry Point": {
+      "main": [
+        [
+          {
+            "node": "Intent Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Intent Classifier": {
+      "main": [
+        [
+          {
+            "node": "Prepare Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Routing": {
+      "main": [
+        [
+          {
+            "node": "Route to Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route to Agent": {
+      "main": [
+        [
+          {
+            "node": "Execute ARCHITECT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute HEALER",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute OBSERVER",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute SPAWNER",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute EVOLVER",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute BUILDER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute ARCHITECT": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute HEALER": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute OBSERVER": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute SPAWNER": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute EVOLVER": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute BUILDER": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Chicago",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "daf79c53-3e47-476f-9aba-c6b18fb06d30",
+  "meta": {
+    "instanceId": "c7c0461801171066093875fcfd1736a9fa7a56b87fa0e147c3693d3242f94a89"
+  },
+  "id": "ye9urinGcCbPgLwy",
+  "tags": []
+}

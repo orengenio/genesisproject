@@ -1,0 +1,432 @@
+{
+  "name": "2. Project Genesis - Architect",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "7d438849-a9a2-42ec-81ae-279cebac2d30",
+      "name": "Design Request",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -900,
+        115
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🏗️ GENESIS ARCHITECT\nTransforms natural language into fully functional n8n workflows using AI and pattern recognition.",
+        "height": 200,
+        "width": 400,
+        "color": 6
+      },
+      "id": "d53b0b4f-9cde-4e05-9cec-31085de1fc47",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/document/d/1m_-9m5i8Y0KBIAipiXA7H9lu-A63NhOi8L1JNerBpB8/edit?tab=t.0",
+          "mode": "url"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "cf10bfe7-b0d9-48db-a1a3-0ad8be7b55f6",
+      "name": "Load Knowledge Base",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -680,
+        120
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ofMGolmfVVtYBvBP",
+          "name": "Google Drive account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "combine_context",
+              "name": "prompt",
+              "value": "={{ $('Design Request').item.json.prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "metadata",
+              "name": "metadata",
+              "value": "={{ $('Design Request').item.json.metadata }}",
+              "type": "object"
+            },
+            {
+              "id": "knowledge",
+              "name": "knowledge",
+              "value": "={{ $json.data || 'No knowledge base loaded' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5318a58d-5318-4bf9-b3fd-69273efb33de",
+      "name": "Combine Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -460,
+        115
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create a complete n8n workflow for this request:\n\n{{ $json.prompt }}\n\nMetadata: {{ JSON.stringify($json.metadata) }}\n\nKnowledge base:\n{{ $json.knowledge }}\n\nGenerate the complete workflow JSON that can be imported directly into n8n. Include all required fields: name, nodes, connections, settings. Each node must have: id, name, type, position, parameters.",
+        "options": {
+          "systemMessage": "You are the Genesis Architect, an expert n8n workflow designer. Your role is to transform natural language requests into complete, production-ready n8n workflows.\n\nKEY RESPONSIBILITIES:\n1. Analyze the user's request and break it into logical automation steps\n2. Design workflows using only valid n8n node types\n3. Include comprehensive error handling and retry logic\n4. Add monitoring hooks for the Observer agent\n5. Make workflows self-documenting with sticky notes\n6. Ensure all node connections are valid\n7. Use the knowledge base patterns when applicable\n\nOUTPUT REQUIREMENTS:\n- Return ONLY valid JSON that can be imported directly into n8n\n- Include all required fields: name, nodes, connections, settings\n- Each node must have: id, name, type, position, parameters\n- Add sticky notes explaining complex logic\n- Include metadata for Genesis tracking\n\nNODE POSITIONING:\n- Start at [240, 300] for triggers\n- Space nodes 220 pixels apart horizontally\n- Use vertical spacing of 120 pixels for parallel branches\n- Keep the workflow compact and readable\n\nAVAILABLE NODE TYPES:\n- Triggers: webhook, schedule, executeWorkflowTrigger\n- Data: set, code, function, merge, splitInBatches\n- Flow: if, switch, wait, errorTrigger\n- Communication: httpRequest, emailSend, slack\n- Files: readBinaryFiles, writeBinaryFile, googleDrive\n- Databases: postgres, mysql, mongodb, redis"
+        }
+      },
+      "id": "4111ccf4-e831-4a89-aaf8-45f47609e872",
+      "name": "AI Workflow Designer Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        115
+      ]
+    },
+    {
+      "parameters": {
+        "model": "claude-3-5-sonnet-20241022",
+        "options": {
+          "maxTokensToSample": 8000,
+          "temperature": 0.3
+        }
+      },
+      "id": "07ef2560-0b9d-4e89-9d70-d520df2f1a15",
+      "name": "Claude LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        -212,
+        335
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "HvbZsCwADVfKiEdW",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "0b0d7c83-23dd-475e-821a-b32e23b7b17e",
+      "name": "Agent Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -92,
+        335
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate the generated workflow\ntry {\n  // Extract JSON from the agent response\n  const agentOutput = $input.first().json.output || $input.first().json.response || '';\n  \n  // Find JSON content\n  let jsonMatch = agentOutput.match(/{[\\s\\S]*}/m);\n  if (!jsonMatch) {\n    throw new Error(\"No valid JSON found in response\");\n  }\n  \n  const workflow = JSON.parse(jsonMatch[0]);\n  \n  // Validate required fields\n  if (!workflow.name) throw new Error(\"Missing workflow name\");\n  if (!workflow.nodes || !Array.isArray(workflow.nodes)) throw new Error(\"Missing or invalid nodes array\");\n  if (!workflow.connections || typeof workflow.connections !== 'object') throw new Error(\"Missing or invalid connections object\");\n  \n  // Validate each node\n  const nodeIds = new Set();\n  for (const node of workflow.nodes) {\n    if (!node.id) throw new Error(`Node missing id: ${JSON.stringify(node)}`);\n    if (!node.name) throw new Error(`Node ${node.id} missing name`);\n    if (!node.type) throw new Error(`Node ${node.id} missing type`);\n    if (!node.position || !Array.isArray(node.position)) throw new Error(`Node ${node.id} missing position`);\n    \n    if (nodeIds.has(node.id)) throw new Error(`Duplicate node id: ${node.id}`);\n    nodeIds.add(node.id);\n  }\n  \n  // Add Genesis metadata\n  workflow.meta = {\n    ...workflow.meta,\n    genesisVersion: \"1.0\",\n    createdBy: \"ARCHITECT\",\n    createdAt: new Date().toISOString(),\n    requestId: $('Design Request').item.json.requestId,\n    monitoringEnabled: true\n  };\n  \n  // Add default settings if missing\n  workflow.settings = workflow.settings || {\n    executionOrder: \"v1\",\n    saveManualExecutions: true,\n    saveExecutionProgress: true,\n    saveDataSuccessExecution: \"all\",\n    saveDataErrorExecution: \"all\"\n  };\n  \n  // Ensure staticData exists\n  workflow.staticData = workflow.staticData || null;\n  \n  return [{\n    valid: true,\n    workflow: workflow,\n    nodeCount: workflow.nodes.length,\n    validationPassed: true,\n    rawOutput: agentOutput\n  }];\n  \n} catch (error) {\n  return [{\n    valid: false,\n    error: error.message,\n    rawResponse: $input.first().json,\n    validationPassed: false\n  }];\n}"
+      },
+      "id": "32ffcb2c-f648-4330-aec5-282a7675f31a",
+      "name": "Validate Design",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        136,
+        115
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "validation_check",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7e1095d5-1f97-4d4c-b3bc-1087e09675d0",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        356,
+        115
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success_response",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "workflow_data",
+              "name": "workflow",
+              "value": "={{ $json.workflow }}",
+              "type": "object"
+            },
+            {
+              "id": "architect_meta",
+              "name": "architectMeta",
+              "value": "={{ {\n  \"nodeCount\": $json.nodeCount,\n  \"requestId\": $('Design Request').item.json.requestId,\n  \"designTime\": new Date().toISOString(),\n  \"prompt\": $('Design Request').item.json.prompt\n} }}",
+              "type": "object"
+            },
+            {
+              "id": "next_action",
+              "name": "nextAction",
+              "value": "spawn",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2d2f42d5-c931-4bfc-985c-e30a36e1a73e",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ✅ Design Complete\nWorkflow validated and ready for spawning",
+        "height": 150,
+        "width": 250,
+        "color": 5
+      },
+      "id": "53fc3cae-2d80-4d28-ad2d-295ec235370e",
+      "name": "Success Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        360,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-metrics-endpoint/webhook/genesis-analytics",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event",
+              "value": "workflow_designed"
+            },
+            {
+              "name": "requestId",
+              "value": "={{ $('Design Request').item.json.requestId }}"
+            },
+            {
+              "name": "nodeCount",
+              "value": "={{ $json.nodeCount }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "1a47ffc8-7f6b-49e1-8844-65af3953f80e",
+      "name": "Log Analytics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        796,
+        115
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "content": "## ❌ Validation Failed\nThe workflow will be sent back for redesign",
+        "height": 150,
+        "width": 250
+      },
+      "id": "2cd74c0b-004f-49fe-a0a0-4d3bfb01e580",
+      "name": "Error Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        340,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 AI Agent Setup\n\nThe Agent is connected to:\n- Claude LLM (primary)\n- Memory for context\n- Can add tools if needed",
+        "height": 200,
+        "width": 300,
+        "color": 4
+      },
+      "id": "fccb4a87-276e-4a33-941e-845e459eb34d",
+      "name": "Agent Setup Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        -220
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Design Request": {
+      "main": [
+        [
+          {
+            "node": "Load Knowledge Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Knowledge Base": {
+      "main": [
+        [
+          {
+            "node": "Combine Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Context": {
+      "main": [
+        [
+          {
+            "node": "AI Workflow Designer Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Workflow Designer Agent": {
+      "main": [
+        [
+          {
+            "node": "Validate Design",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Workflow Designer Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Workflow Designer Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Design": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Success Response": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Chicago",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "11aa3026-ccb5-440b-99c6-a3d7fdd9d060",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c7c0461801171066093875fcfd1736a9fa7a56b87fa0e147c3693d3242f94a89"
+  },
+  "id": "rvn5aCm42IVax6ps",
+  "tags": []
+}

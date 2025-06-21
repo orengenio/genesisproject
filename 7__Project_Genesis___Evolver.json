@@ -1,0 +1,837 @@
+{
+  "name": "7. Project Genesis - Evolver",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "a4d733f4-da15-4819-8032-2148edcc741f",
+      "name": "Learning Cycle",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "f204ba8c-157d-4e13-80b0-4f45d6f6febd",
+      "name": "Manual Evolution Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        300,
+        550
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🧬 GENESIS EVOLVER\nLearns from successful patterns, optimizes workflows, and evolves the entire mesh.",
+        "height": 200,
+        "width": 400,
+        "color": 7
+      },
+      "id": "01d80c44-b63d-4cd5-bb3b-bac23c72ee7a",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        320,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://8.orengen.io/api/v1/executions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "n8nApi",
+        "options": {}
+      },
+      "id": "22faa04d-36dc-4ac1-8203-c1c2f477a989",
+      "name": "Get Successful Executions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        350
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "U9bPQvXlmGxCr8nu",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process and filter Genesis-managed workflows\nconst executions = $input.first().json.data || [];\nconst genesisPatterns = [];\n\nfor (const exec of executions) {\n  if (exec.workflowData && \n      (exec.workflowData.meta?.genesisVersion || \n       exec.workflowData.name?.includes('GENESIS'))) {\n    genesisPatterns.push({\n      workflowId: exec.workflowId,\n      workflowName: exec.workflowData.name,\n      nodes: exec.workflowData.nodes,\n      connections: exec.workflowData.connections,\n      executionTime: exec.stoppedAt ? \n        (new Date(exec.stoppedAt) - new Date(exec.startedAt)) / 1000 : 0,\n      nodeCount: exec.workflowData.nodes?.length || 0\n    });\n  }\n}\n\nreturn [{\n  patterns: genesisPatterns,\n  totalAnalyzed: executions.length,\n  genesisWorkflows: genesisPatterns.length,\n  timestamp: new Date().toISOString()\n}];"
+      },
+      "id": "330cdccc-89ed-4a81-8338-dcff4b81316e",
+      "name": "Analyze Patterns",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        818,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze these workflow patterns and execution data:\n\n{{ JSON.stringify($json.patterns) }}\n\nTotal workflows analyzed: {{ $json.totalAnalyzed }}\n\nProvide insights on:\n1. Most successful node combinations\n2. Performance optimization opportunities\n3. Common patterns that could become templates\n4. Bottlenecks or inefficiencies to avoid",
+        "options": {
+          "systemMessage": "You are the Genesis Evolver, an expert at analyzing workflow patterns and generating optimizations. You have access to comprehensive execution data and can identify patterns that lead to successful automations. Focus on practical improvements and reusable templates."
+        }
+      },
+      "id": "f846e77b-1b46-4fbc-9d5d-0a6941a6c023",
+      "name": "Analyze with Gemini",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1116,
+        200
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "aab6c175-11cd-4ad2-b38a-01bbdb6bd663",
+      "name": "Pattern Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1264,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process healing patterns if this was triggered by HEALER\nconst triggerData = $('Manual Evolution Trigger').item?.json || {};\n\nif (triggerData.source === 'healer' && triggerData.healingPatterns) {\n  const healingPatterns = triggerData.healingPatterns;\n  const learnings = {\n    commonIssues: {},\n    successfulFixes: [],\n    failedStrategies: []\n  };\n  \n  // Analyze healing patterns\n  for (const pattern of healingPatterns) {\n    if (pattern.success) {\n      learnings.successfulFixes.push({\n        strategy: pattern.strategy,\n        issue: pattern.issue,\n        solution: pattern.notes\n      });\n    } else {\n      learnings.failedStrategies.push(pattern.strategy);\n    }\n    \n    // Track common issues\n    const issueType = categorizeIssue(pattern.issue || pattern.error);\n    learnings.commonIssues[issueType] = (learnings.commonIssues[issueType] || 0) + 1;\n  }\n  \n  return [{\n    type: 'healing_analysis',\n    learnings,\n    timestamp: new Date().toISOString()\n  }];\n}\n\nfunction categorizeIssue(issue) {\n  if (!issue) return 'unknown';\n  if (issue.includes('auth') || issue.includes('401')) return 'authentication';\n  if (issue.includes('timeout')) return 'timeout';\n  if (issue.includes('rate')) return 'rate_limit';\n  if (issue.includes('connection')) return 'connectivity';\n  return 'other';\n}\n\n// Continue with regular pattern analysis\nreturn [{ type: 'pattern_analysis', continue: true }];"
+      },
+      "id": "0657638c-d88a-4217-a80e-4aecb9fd06c4",
+      "name": "Process Healing Patterns",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Based on the workflow analysis insights:\n\n{{ $json.output || $json.response }}\n\nGenerate 3 optimized workflow templates that incorporate the most successful patterns. Each template should include:\n1. Complete n8n workflow JSON\n2. Clear use case description\n3. Performance optimizations\n4. Error handling strategies\n\nFocus on practical, reusable workflows that solve common automation needs.",
+        "options": {
+          "systemMessage": "You are the Genesis Evolver's template generator. Create complete, production-ready n8n workflow templates based on successful patterns. Each workflow must be valid JSON that can be imported directly into n8n."
+        }
+      },
+      "id": "55993f8a-076b-42ab-9847-70ab209cc33e",
+      "name": "Generate Templates",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1492,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "model": "claude-3-opus-20240229",
+        "options": {
+          "maxTokensToSample": 8000,
+          "temperature": 0.4
+        }
+      },
+      "id": "1db92e1a-767a-4cc0-a36e-b32f37994b21",
+      "name": "Claude 3 Opus",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1520,
+        420
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "HvbZsCwADVfKiEdW",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "582a670a-5b48-4aa3-b920-355be38871fe",
+      "name": "Template Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1640,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Research the latest n8n automation techniques and patterns for:\n\n{{ $json.patterns[0]?.workflowName || 'workflow optimization' }}\n\nFind:\n1. New node types or features\n2. Best practices from the community\n3. Performance optimization techniques\n4. Integration patterns with popular services",
+        "options": {
+          "systemMessage": "You are a research assistant for the Genesis Evolver. Search for the latest automation techniques, n8n best practices, and innovative workflow patterns. Focus on practical, implementable solutions."
+        }
+      },
+      "id": "214759d9-f0cb-42d4-a1fc-fe723ecb29c0",
+      "name": "Research New Techniques",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1868,
+        500
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "8f2833ed-7ffe-4b8e-ab34-0a446a518c53",
+      "name": "Research Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        2016,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/document/d/1m_-9m5i8Y0KBIAipiXA7H9lu-A63NhOi8L1JNerBpB8/edit?tab=t.0",
+          "mode": "url"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "52c8ae12-a169-4019-9f0f-b090d088dfe6",
+      "name": "Load Current Knowledge",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1946,
+        200
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ofMGolmfVVtYBvBP",
+          "name": "Google Drive account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and validate generated templates\nconst templateResponse = $input.first().json.output || $input.first().json.response || '';\nconst templates = [];\n\ntry {\n  // Extract JSON templates from response\n  const jsonMatches = templateResponse.matchAll(/{[\\s\\S]*?\"nodes\"[\\s\\S]*?}/gm);\n  \n  for (const match of jsonMatches) {\n    try {\n      const template = JSON.parse(match[0]);\n      if (template.nodes && template.connections) {\n        templates.push(template);\n      }\n    } catch (e) {\n      // Skip invalid JSON\n    }\n  }\n  \n  // Add metadata to templates\n  const enhancedTemplates = templates.map((template, index) => ({\n    ...template,\n    meta: {\n      ...template.meta,\n      genesisVersion: '1.0',\n      createdBy: 'EVOLVER',\n      createdAt: new Date().toISOString(),\n      basedOn: 'pattern_analysis',\n      templateIndex: index\n    }\n  }));\n  \n  return [{\n    templates: enhancedTemplates,\n    templateCount: enhancedTemplates.length,\n    research: $('Research New Techniques').item?.json.output || 'No research data',\n    timestamp: new Date().toISOString()\n  }];\n  \n} catch (error) {\n  return [{\n    templates: [],\n    templateCount: 0,\n    error: error.message,\n    timestamp: new Date().toISOString()\n  }];\n}"
+      },
+      "id": "34f80278-296b-44d7-9329-c6f6eea8365f",
+      "name": "Create New Templates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2244,
+        350
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Update knowledge base with new learnings\nconst currentKnowledge = $('Load Current Knowledge').item?.json.data || '';\nconst newTemplates = $input.first().json.templates || [];\nconst research = $input.first().json.research || '';\nconst analysisInsights = $('Analyze with Gemini').item?.json.output || '';\n\n// Build evolution report\nconst evolutionReport = `\n## Evolution Update - ${new Date().toISOString()}\n\n### Analysis Insights (Gemini 1.5 Pro):\n${analysisInsights}\n\n### New Templates Generated (Claude 3 Opus):\n${newTemplates.map(t => `- ${t.name}: ${t.description || 'Optimized workflow'}`).join('\\n')}\n\n### Research Findings (Perplexity):\n${research}\n\n### Pattern Statistics:\n- Templates created: ${newTemplates.length}\n- Based on ${$('Analyze Patterns').item.json.genesisWorkflows} Genesis workflows\n- Total executions analyzed: ${$('Analyze Patterns').item.json.totalAnalyzed}\n\n---\n`;\n\n// Append to knowledge base\nconst updatedKnowledge = currentKnowledge + '\\n\\n' + evolutionReport;\n\nreturn [{\n  updatedKnowledge,\n  updateTime: new Date().toISOString(),\n  templatesAdded: newTemplates.length,\n  knowledgeSize: updatedKnowledge.length\n}];"
+      },
+      "id": "3db4b481-0ae5-42cb-bb57-48f078e4b711",
+      "name": "Update Knowledge Base",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/document/d/1m_-9m5i8Y0KBIAipiXA7H9lu-A63NhOi8L1JNerBpB8/edit?tab=t.0",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "6c2ce1fc-e3ad-46a3-b2d5-f7210fe69cb6",
+      "name": "Save Updated Knowledge",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2684,
+        250
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ofMGolmfVVtYBvBP",
+          "name": "Google Drive account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check_templates",
+              "leftValue": "={{ $json.templateCount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "944fa4e2-0518-4641-bb70-dc5b1d3aa90a",
+      "name": "Has New Templates?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c9d8ab38-1725-45d8-bdbe-d209dd4f87a2",
+      "name": "Process Each Template",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2684,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate evolution metrics\nconst metrics = {\n  timestamp: new Date().toISOString(),\n  event: 'evolution_complete',\n  stats: {\n    patternsAnalyzed: $('Analyze Patterns').item.json.genesisWorkflows,\n    templatesCreated: $('Create New Templates').item.json.templateCount,\n    knowledgeUpdated: $('Update Knowledge Base').item.json.knowledgeSize > 0,\n    aiModelsUsed: ['Gemini 1.5 Pro', 'Claude 3 Opus', 'Perplexity'],\n    insights: {\n      gemini: 'Pattern analysis completed',\n      claude: 'Templates generated',\n      perplexity: 'Research conducted'\n    }\n  },\n  nextEvolution: new Date(Date.now() + 3600000).toISOString() // +1 hour\n};\n\nreturn [metrics];"
+      },
+      "id": "689a3a7e-d019-443b-a1f5-6877c28682c4",
+      "name": "Generate Evolution Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2904,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-metrics-endpoint/webhook/genesis-metrics",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "metrics",
+              "value": "={{ $json }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "07b11abf-aa28-46bf-af08-7f7e71894142",
+      "name": "Log Evolution Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3124,
+        250
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "content": "## 📈 Evolution Process\n\n1. **Analyze** successful workflows\n2. **Learn** from patterns\n3. **Generate** optimized templates\n4. **Update** knowledge base\n5. **Spawn** new workflows\n6. **Track** improvements",
+        "height": 250,
+        "width": 350,
+        "color": 4
+      },
+      "id": "10a67606-e0d0-416c-9bf4-415f231fd143",
+      "name": "Evolution Process",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        760,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Based on the healing patterns:\n\nCommon Issues: {{ JSON.stringify($json.learnings.commonIssues) }}\nSuccessful Fixes: {{ JSON.stringify($json.learnings.successfulFixes) }}\n\nGenerate specific recommendations to prevent these issues in future workflows.",
+        "options": {
+          "systemMessage": "You are the Genesis Healer insights generator. Analyze healing patterns and provide actionable recommendations to prevent future issues."
+        }
+      },
+      "id": "e870afe8-f15f-4169-ac73-f80ff7a60914",
+      "name": "Generate Healing Insights",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        740,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check evolution thresholds and generate alerts\nconst stats = $('Generate Evolution Metrics').item.json.stats || {};\nconst alerts = [];\n\n// Alert if no templates created\nif (stats.templatesCreated === 0) {\n  alerts.push({\n    type: 'warning',\n    message: 'No new templates generated in this evolution cycle',\n    severity: 'medium'\n  });\n}\n\n// Alert on successful evolution\nif (stats.templatesCreated > 0) {\n  alerts.push({\n    type: 'evolution',\n    message: `Successfully created ${stats.templatesCreated} new optimized templates`,\n    severity: 'success'\n  });\n}\n\n// Alert if pattern analysis found issues\nif (stats.patternsAnalyzed > 10 && stats.templatesCreated < 2) {\n  alerts.push({\n    type: 'optimization',\n    message: 'Many patterns analyzed but few templates generated - may need tuning',\n    severity: 'info'\n  });\n}\n\nreturn alerts.length > 0 ? alerts : [{ type: 'none', message: 'No alerts' }];"
+      },
+      "id": "5d1cd542-6a35-4ea8-9cd4-a10188b6a84f",
+      "name": "Check Evolution Alerts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3344,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "alert_check",
+              "leftValue": "={{ $json[0].type }}",
+              "rightValue": "none",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "84fcd5cb-93bf-450d-a69c-bf6d4f51b096",
+      "name": "Send Alerts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3564,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 AI Model Roles\n\n**Gemini 1.5 Pro**: Analyzes massive pattern datasets (128k context)\n**Claude 3 Opus**: Generates complex workflow templates\n**Perplexity**: Researches latest automation techniques\n\nEach has dedicated memory!",
+        "height": 200,
+        "width": 350,
+        "color": 4
+      },
+      "id": "c933398a-208b-46b6-84f6-9f38cb9791c0",
+      "name": "AI Roles",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1144,
+        420
+      ],
+      "id": "0627511b-0ff1-4f63-8981-735d8f229bf3",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "CGk5Ch09FthlNV2H",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "perplexity/llama-3.1-sonar-large-128k-online",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1896,
+        720
+      ],
+      "id": "78076c51-e6db-42ec-a3f1-0d160e6aa5e9",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "B7hBd4nBgvQ99eGi",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "LOrFn8VuUTzbYHaH",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2904,
+        450
+      ],
+      "id": "5dcbd0ad-0286-4014-8a5b-5302cdc8df12",
+      "name": "Spawn New Template"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Learning Cycle": {
+      "main": [
+        [
+          {
+            "node": "Get Successful Executions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Evolution Trigger": {
+      "main": [
+        [
+          {
+            "node": "Process Healing Patterns",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Successful Executions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Successful Executions": {
+      "main": [
+        [
+          {
+            "node": "Analyze Patterns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Patterns": {
+      "main": [
+        [
+          {
+            "node": "Analyze with Gemini",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Research New Techniques",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pattern Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Analyze with Gemini",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Generate Templates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude 3 Opus": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Templates",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Generate Healing Insights",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Template Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Generate Templates",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Generate Healing Insights",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Research New Techniques",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Templates": {
+      "main": [
+        [
+          {
+            "node": "Load Current Knowledge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Healing Patterns": {
+      "main": [
+        [
+          {
+            "node": "Generate Healing Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research New Techniques": {
+      "main": [
+        [
+          {
+            "node": "Create New Templates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Current Knowledge": {
+      "main": [
+        [
+          {
+            "node": "Create New Templates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New Templates": {
+      "main": [
+        [
+          {
+            "node": "Update Knowledge Base",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Has New Templates?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Knowledge Base": {
+      "main": [
+        [
+          {
+            "node": "Save Updated Knowledge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Updated Knowledge": {
+      "main": [
+        [
+          {
+            "node": "Generate Evolution Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has New Templates?": {
+      "main": [
+        [
+          {
+            "node": "Process Each Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Each Template": {
+      "main": [
+        [
+          {
+            "node": "Spawn New Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Evolution Metrics": {
+      "main": [
+        [
+          {
+            "node": "Log Evolution Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Evolution Metrics": {
+      "main": [
+        [
+          {
+            "node": "Check Evolution Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Evolution Alerts": {
+      "main": [
+        [
+          {
+            "node": "Send Alerts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Alerts?": {
+      "main": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyze with Gemini",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Research New Techniques",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Chicago",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "c1f74bfc-f12e-43cb-8b20-6bdf98dcf4b6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c7c0461801171066093875fcfd1736a9fa7a56b87fa0e147c3693d3242f94a89"
+  },
+  "id": "GfdOIKUvtq4sV3nf",
+  "tags": []
+}

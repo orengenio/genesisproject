@@ -1,0 +1,501 @@
+{
+  "name": "5. Project Genesis - Observer",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "30501f4c-c6de-4c67-90eb-0ca377820185",
+      "name": "Monitoring Loop",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "genesis-observer",
+        "options": {}
+      },
+      "id": "24dfe3b4-2f3c-461b-9f55-efcb8dccc08f",
+      "name": "Manual Observer Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        960,
+        400
+      ],
+      "webhookId": "genesis-observer"
+    },
+    {
+      "parameters": {
+        "content": "## 👁️ GENESIS OBSERVER\nMonitors all Genesis-managed workflows, detects issues, and triggers healing when needed.",
+        "height": 200,
+        "width": 400,
+        "color": 5
+      },
+      "id": "16675b03-4117-4e84-a653-b06dd57ddf37",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        900,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://8.orengen.io/api/v1/workflows",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "n8nApi",
+        "options": {}
+      },
+      "id": "8311941f-0c30-4e83-9a51-4facedd8a7c6",
+      "name": "Get All Workflows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1180,
+        40
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "U9bPQvXlmGxCr8nu",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process and filter Genesis-managed workflows\nconst workflows = $input.first().json.data || [];\nconst genesisWorkflows = [];\n\nfor (const workflow of workflows) {\n  // Check if Genesis-managed\n  if (workflow.meta?.genesisVersion || \n      workflow.meta?.genesisSpawned || \n      workflow.name?.startsWith('GENESIS_') ||\n      workflow.tags?.includes('genesis')) {\n    \n    genesisWorkflows.push({\n      id: workflow.id,\n      name: workflow.name,\n      active: workflow.active,\n      createdAt: workflow.createdAt,\n      updatedAt: workflow.updatedAt,\n      meta: workflow.meta || {},\n      nodeCount: workflow.nodes?.length || 0\n    });\n  }\n}\n\nreturn [{\n  totalWorkflows: workflows.length,\n  genesisWorkflows: genesisWorkflows.length,\n  workflows: genesisWorkflows,\n  checkTime: new Date().toISOString()\n}];"
+      },
+      "id": "23e1c420-2339-413b-9166-62997f6aab02",
+      "name": "Filter Genesis Workflows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "id": "96d9b90c-3192-4db8-9c2a-37b051fd160a",
+      "name": "Batch Health Checks",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1620,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://8.orengen.io/api/v1/executions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "n8nApi",
+        "options": {}
+      },
+      "id": "e2d1c66b-414a-42b2-a282-31b1e1542b3c",
+      "name": "Get Recent Executions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1840,
+        -35
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "U9bPQvXlmGxCr8nu",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analyze workflow health\nconst workflow = $('Batch Health Checks').item.json.workflows[0];\nconst executions = $input.first().json.data || [];\n\n// Calculate health metrics\nconst now = new Date();\nconst healthCheck = {\n  workflowId: workflow.id,\n  workflowName: workflow.name,\n  isActive: workflow.active,\n  lastExecution: null,\n  recentExecutions: executions.length,\n  errorCount: 0,\n  successCount: 0,\n  errorRate: 0,\n  avgExecutionTime: 0,\n  lastError: null,\n  healthStatus: 'healthy',\n  issues: []\n};\n\n// Analyze executions\nlet totalTime = 0;\nfor (const exec of executions) {\n  if (exec.finished) {\n    const startTime = new Date(exec.startedAt);\n    const endTime = new Date(exec.stoppedAt);\n    totalTime += (endTime - startTime) / 1000;\n    \n    if (exec.status === 'error' || exec.status === 'crashed') {\n      healthCheck.errorCount++;\n      if (!healthCheck.lastError) {\n        healthCheck.lastError = {\n          time: exec.stoppedAt,\n          error: exec.data?.error?.message || 'Unknown error'\n        };\n      }\n    } else if (exec.status === 'success') {\n      healthCheck.successCount++;\n    }\n  }\n  \n  if (!healthCheck.lastExecution || new Date(exec.startedAt) > new Date(healthCheck.lastExecution)) {\n    healthCheck.lastExecution = exec.startedAt;\n  }\n}\n\n// Calculate metrics\nif (executions.length > 0) {\n  healthCheck.errorRate = healthCheck.errorCount / executions.length;\n  healthCheck.avgExecutionTime = totalTime / executions.length;\n}\n\n// Determine health status\nconst hoursSinceLastExec = healthCheck.lastExecution ? \n  (now - new Date(healthCheck.lastExecution)) / (1000 * 60 * 60) : 999;\n\n// Health rules\nif (!workflow.active) {\n  healthCheck.healthStatus = 'inactive';\n  healthCheck.issues.push('Workflow is not active');\n} else if (healthCheck.errorRate > 0.5) {\n  healthCheck.healthStatus = 'critical';\n  healthCheck.issues.push(`High error rate: ${(healthCheck.errorRate * 100).toFixed(1)}%`);\n} else if (healthCheck.errorRate > 0.1) {\n  healthCheck.healthStatus = 'warning';\n  healthCheck.issues.push(`Elevated error rate: ${(healthCheck.errorRate * 100).toFixed(1)}%`);\n} else if (hoursSinceLastExec > 24 && workflow.name.includes('DAILY')) {\n  healthCheck.healthStatus = 'warning';\n  healthCheck.issues.push('No execution in 24 hours for daily workflow');\n} else if (healthCheck.avgExecutionTime > 300) {\n  healthCheck.healthStatus = 'warning';\n  healthCheck.issues.push(`Slow execution time: ${healthCheck.avgExecutionTime.toFixed(1)}s`);\n}\n\nreturn [healthCheck];"
+      },
+      "id": "fa180b72-075f-4b19-a161-9aa6fd7c7731",
+      "name": "Analyze Health",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2060,
+        -35
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "health_check",
+              "leftValue": "={{ $json.healthStatus }}",
+              "rightValue": "healthy",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3d60ec26-9999-4148-96c9-9a57eefe0e5e",
+      "name": "Needs Healing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2280,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "healthCheck",
+              "renameField": true,
+              "outputFieldName": "unhealthyWorkflows"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4f04d940-54f1-4cd3-937c-9d6220b2dd48",
+      "name": "Aggregate Issues",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2500,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_HEALER_ID",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "f82c05f8-b432-42cb-a53b-28eca3160035",
+      "name": "Trigger HEALER",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        2720,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate observer report\nconst healthChecks = $input.first().json.healthCheck || [];\nconst report = {\n  timestamp: new Date().toISOString(),\n  totalMonitored: healthChecks.length,\n  healthy: 0,\n  warning: 0,\n  critical: 0,\n  inactive: 0,\n  summary: []\n};\n\n// Count statuses\nfor (const check of healthChecks) {\n  switch(check.healthStatus) {\n    case 'healthy': report.healthy++; break;\n    case 'warning': report.warning++; break;\n    case 'critical': report.critical++; break;\n    case 'inactive': report.inactive++; break;\n  }\n  \n  if (check.healthStatus !== 'healthy') {\n    report.summary.push({\n      workflow: check.workflowName,\n      status: check.healthStatus,\n      issues: check.issues\n    });\n  }\n}\n\nreport.overallHealth = report.critical === 0 && report.warning < 3 ? 'good' : \n                      report.critical > 0 ? 'critical' : 'warning';\n\nreturn [report];"
+      },
+      "id": "49567e30-e2df-4c52-a70c-c84527e6473d",
+      "name": "Generate Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-metrics-endpoint/webhook/genesis-metrics",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event",
+              "value": "health_check_complete"
+            },
+            {
+              "name": "report",
+              "value": "={{ $json }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "aa72027c-a03d-4b58-9347-dfbae02dafd5",
+      "name": "Log Health Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2940,
+        -60
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "critical_check",
+              "leftValue": "={{ $json.overallHealth }}",
+              "rightValue": "critical",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fde3a917-0878-475c-a598-6ba9231c0d97",
+      "name": "Critical Alert?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3160,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📊 Health Metrics\n\n**Status Levels:**\n- 🟢 Healthy: All good\n- 🟡 Warning: Minor issues\n- 🔴 Critical: Needs immediate healing\n- ⚫ Inactive: Workflow disabled",
+        "height": 200,
+        "width": 300,
+        "color": 4
+      },
+      "id": "af40d3fb-0c7b-4ebf-a3e8-2abc79d01c06",
+      "name": "Metrics Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle manual observer requests (registration, deregistration, etc.)\nconst action = $input.first().json.action || 'register';\nconst response = {\n  action,\n  timestamp: new Date().toISOString(),\n  success: true\n};\n\nswitch(action) {\n  case 'register':\n    // Register new workflow for monitoring\n    response.message = `Workflow ${$input.first().json.workflowId} registered for monitoring`;\n    response.monitoringConfig = {\n      workflowId: $input.first().json.workflowId,\n      workflowName: $input.first().json.workflowName,\n      monitoringLevel: $input.first().json.monitoringLevel || 'standard',\n      healingEnabled: $input.first().json.healingEnabled !== false,\n      alertThreshold: $input.first().json.alertThreshold || 0.9\n    };\n    break;\n    \n  case 'deregister':\n    response.message = `Workflow ${$input.first().json.workflowId} removed from monitoring`;\n    break;\n    \n  case 'status':\n    response.message = 'Observer is active and monitoring';\n    break;\n    \n  default:\n    response.success = false;\n    response.message = `Unknown action: ${action}`;\n}\n\nreturn [response];"
+      },
+      "id": "18e6f8ef-fbeb-4321-aebe-df47863c3e82",
+      "name": "Handle Manual Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "fa5fd24c-98a2-4581-b10d-5f038d013c22",
+      "name": "Respond to Manual",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1400,
+        400
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Monitoring Loop": {
+      "main": [
+        [
+          {
+            "node": "Get All Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Observer Trigger": {
+      "main": [
+        [
+          {
+            "node": "Handle Manual Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get All Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Workflows": {
+      "main": [
+        [
+          {
+            "node": "Filter Genesis Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Genesis Workflows": {
+      "main": [
+        [
+          {
+            "node": "Batch Health Checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Health Checks": {
+      "main": [
+        [
+          {
+            "node": "Get Recent Executions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Recent Executions": {
+      "main": [
+        [
+          {
+            "node": "Analyze Health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Health": {
+      "main": [
+        [
+          {
+            "node": "Needs Healing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Healing?": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Issues",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Batch Health Checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Issues": {
+      "main": [
+        [
+          {
+            "node": "Trigger HEALER",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Report": {
+      "main": [
+        [
+          {
+            "node": "Log Health Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Health Report": {
+      "main": [
+        [
+          {
+            "node": "Critical Alert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Critical Alert?": {
+      "main": [
+        []
+      ]
+    },
+    "Handle Manual Request": {
+      "main": [
+        [
+          {
+            "node": "Respond to Manual",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Chicago",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "08a87737-b47d-4660-9355-cd4324b5d038",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c7c0461801171066093875fcfd1736a9fa7a56b87fa0e147c3693d3242f94a89"
+  },
+  "id": "2fOJEvWL6wAzPcZl",
+  "tags": []
+}

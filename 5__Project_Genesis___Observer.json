@@ -325,6 +325,17 @@
         1400,
         400
       ]
+    },
+    {
+      "parameters": {},
+      "id": "4ce990a4-6a7e-4308-9e1c-dc6c9329084c",
+      "name": "Return Data",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3420,
+        0
+      ]
     }
   ],
   "pinData": {},
@@ -469,7 +480,13 @@
     },
     "Critical Alert?": {
       "main": [
-        []
+        [
+          {
+            "node": "Return Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Handle Manual Request": {
@@ -477,6 +494,17 @@
         [
           {
             "node": "Respond to Manual",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Manual": {
+      "main": [
+        [
+          {
+            "node": "Return Data",
             "type": "main",
             "index": 0
           }

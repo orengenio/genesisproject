@@ -116,10 +116,10 @@
     },
     {
       "parameters": {
-        "model": "claude-3-5-sonnet-20241022",
+        "model": "claude-3-opus-20240229",
         "options": {
           "maxTokensToSample": 8000,
-          "temperature": 0.3
+          "temperature": 0.2
         }
       },
       "id": "07ef2560-0b9d-4e89-9d70-d520df2f1a15",
@@ -316,6 +316,17 @@
         -20,
         -220
       ]
+    },
+    {
+      "parameters": {},
+      "id": "bb8252bc-a7d9-4432-bf66-60f83a4d008c",
+      "name": "Return Data",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        996,
+        115
+      ]
     }
   ],
   "pinData": {},
@@ -406,12 +417,46 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Error Note",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Success Response": {
       "main": [
-        []
+        [
+          {
+            "node": "Log Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Analytics": {
+      "main": [
+        [
+          {
+            "node": "Return Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Note": {
+      "main": [
+        [
+          {
+            "node": "Return Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },

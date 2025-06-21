@@ -256,7 +256,7 @@
       "parameters": {
         "model": "gpt-4o",
         "options": {
-          "temperature": 0.3
+          "temperature": 0.2
         }
       },
       "id": "9ea82b11-b6ba-4b57-b0f1-d8d6d625e2b9",
@@ -276,7 +276,7 @@
     },
     {
       "parameters": {
-        "model": "claude-3-5-sonnet-20241022",
+        "model": "claude-3-opus-20240229",
         "options": {
           "maxTokensToSample": 4000,
           "temperature": 0.2
@@ -615,6 +615,17 @@
       ],
       "id": "6265bc7c-f57e-4613-9c65-27c6a21843ef",
       "name": "Notify EVOLVER"
+    },
+    {
+      "parameters": {},
+      "id": "d675d6b1-fbfb-46bd-95a1-8bef6b56d461",
+      "name": "Return Data",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        792,
+        35
+      ]
     }
   ],
   "pinData": {},
@@ -873,6 +884,28 @@
         [
           {
             "node": "Generate Patch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Healing Metrics": {
+      "main": [
+        [
+          {
+            "node": "Return Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify EVOLVER": {
+      "main": [
+        [
+          {
+            "node": "Return Data",
             "type": "main",
             "index": 0
           }

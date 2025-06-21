@@ -358,6 +358,17 @@
         -420,
         640
       ]
+    },
+    {
+      "parameters": {},
+      "id": "c986b01d-cd20-4051-946e-b6edaac6f296",
+      "name": "Return Data",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        740,
+        220
+      ]
     }
   ],
   "pinData": {},
@@ -476,6 +487,17 @@
         [
           {
             "node": "Log Spawn Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Spawn Metrics": {
+      "main": [
+        [
+          {
+            "node": "Return Data",
             "type": "main",
             "index": 0
           }

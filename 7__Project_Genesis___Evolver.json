@@ -469,7 +469,7 @@
     },
     {
       "parameters": {
-        "modelName": "models/gemini-2.5-pro",
+        "modelName": "models/gemini-1.5-pro-latest",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
@@ -532,6 +532,17 @@
       ],
       "id": "5dcbd0ad-0286-4014-8a5b-5302cdc8df12",
       "name": "Spawn New Template"
+    },
+    {
+      "parameters": {},
+      "id": "40d191aa-2110-4534-85c1-fb9683b88ead",
+      "name": "Return Data",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3720,
+        250
+      ]
     }
   ],
   "pinData": {},
@@ -745,6 +756,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Generate Evolution Metrics",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -794,7 +812,13 @@
     },
     "Send Alerts?": {
       "main": [
-        []
+        [
+          {
+            "node": "Return Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Google Gemini Chat Model": {
@@ -814,6 +838,17 @@
           {
             "node": "Research New Techniques",
             "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spawn New Template": {
+      "main": [
+        [
+          {
+            "node": "Return Data",
+            "type": "main",
             "index": 0
           }
         ]
